@@ -262,6 +262,7 @@ class PaginatorViewsTest(TestCase):
             self.assertEqual(len(response.context['page_obj']),
                              self.CREATE_POST)
 
+
 class FollowTest(TestCase):
     def setUp(self):
         self.client_auth_follower = Client()
