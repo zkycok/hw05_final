@@ -129,6 +129,7 @@ def follow_index(request):
         {'page_obj': page, 'paginator': paginator}
     )
 
+
 @login_required
 def profile_follow(request, username):
     author = User.objects.get(username=username)
