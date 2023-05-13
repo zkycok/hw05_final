@@ -17,6 +17,8 @@ class TaskPagesTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
 
+        cache.clear()
+
         cls.user = User.objects.create_user(username='auth')
 
         cls.group = Group.objects.create(
