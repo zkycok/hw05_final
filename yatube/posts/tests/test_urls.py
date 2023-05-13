@@ -14,8 +14,6 @@ class TaskURLTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cache.clear()
-
         cls.user = User.objects.create_user(username="auth")
 
         cls.group = Group.objects.create(
@@ -45,6 +43,7 @@ class TaskURLTests(TestCase):
                                    **cls.templates_url_names_private}
 
     def setUp(self):
+        cache.clear()
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
