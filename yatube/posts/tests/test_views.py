@@ -304,4 +304,4 @@ class FollowTest(TestCase):
         self.assertEqual(post_text_0, self.post.text)
         response = self.client_auth_following.get(
             reverse('posts:follow_index'))
-        self.assertNotContains(response, self.post.text)
+        self.assertNotContains(response, self.post)
