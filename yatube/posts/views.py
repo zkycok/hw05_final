@@ -137,7 +137,7 @@ def profile_follow(request, username):
     if author != user:
         Follow.objects.get_or_create(user=user, author=author)
         return redirect(
-            'profile',
+            'posts:profile',
             username=username
         )
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
