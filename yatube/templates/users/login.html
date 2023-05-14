@@ -59,9 +59,6 @@
             <button type="submit" class="btn btn-primary">
               Войти
             </button>
-            {% if post.group %}
-              <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы</a>
-            {% endif %}>
             <a href="{% url 'users:password_reset' %}" class="btn btn-link">
               Забыли пароль?
             </a>
