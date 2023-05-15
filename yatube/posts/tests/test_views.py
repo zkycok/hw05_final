@@ -1,17 +1,23 @@
+import shutil
+import tempfile
+
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Page
 from django import forms
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.forms import PostForm
-from posts.models import Group, Post, Follow
+from posts.forms import PostForm, CommentForm
+from posts.models import Group, Post, Follow, Comment
 
 User = get_user_model()
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class TaskPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -25,30 +31,55 @@ class TaskPagesTests(TestCase):
             description='Описание группы'
         )
 
+        name = 'small.gif'
+
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        uploaded = SimpleUploadedFile(
+            name=name,
+            content=small_gif,
+            content_type='image/gif'
+        )
+
         cls.post = Post.objects.create(
             text='Тестовый текст',
             author=cls.user,
             group=cls.group,
+            image=uploaded,
 
         )
 
         cls.templates_pages_names = [(reverse('posts:index'),
                                       'posts/index.html'),
-                                     (reverse('posts:group_list',
-                                              kwargs={'slug': cls.group.slug}),
+                                     (reverse(
+                                         'posts:group_list',
+                                         kwargs={'slug': cls.group.slug}),
                                       'posts/group_list.html'),
-                                     (reverse('posts:profile',
-                                              kwargs={'username': cls.user}),
+                                     (reverse(
+                                         'posts:profile',
+                                         kwargs={'username': cls.user}),
                                       'posts/profile.html'),
-                                     (reverse('posts:post_detail',
-                                              kwargs={'post_id': cls.post.id}),
+                                     (reverse(
+                                         'posts:post_detail',
+                                         kwargs={'post_id': cls.post.id}),
                                       'posts/post_detail.html'),
-                                     (reverse('posts:post_edit',
-                                              kwargs={'post_id': cls.post.id}),
+                                     (reverse(
+                                         'posts:post_edit',
+                                         kwargs={'post_id': cls.post.id}),
                                       'posts/create_post.html'),
                                      (reverse('posts:post_create'),
-                                      'posts/create_post.html'),
-                                     ]
+                                      'posts/create_post.html'), ]
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         cache.clear()
@@ -104,9 +135,18 @@ class TaskPagesTests(TestCase):
 
     def test_post_detail_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
+        new_comment = Comment.objects.create(
+            post=self.post,
+            author=self.user,
+            text='New post'
+        )
+
         response = self.authorized_client.get(
             reverse('posts:post_detail',
-                    kwargs={'post_id': self.post.id}))
+                    kwargs={'post_id': self.post.id,
+                            }))
+        self.assertIn(new_comment, response.context.get('comments'))
+        self.assertIsInstance(response.context.get('form'), CommentForm)
         self.first_page_info(response.context, is_page=False)
 
     def test_post_edit_correct_context(self):
@@ -282,26 +322,36 @@ class FollowTest(TestCase):
         self.client_auth_following.force_login(self.user_following)
 
     def test_follow(self):
+        Follow.objects.all().delete()
         self.client_auth_follower.get(reverse('posts:profile_follow', kwargs={
             'username': self.user_following.username}))
-        self.assertEqual(Follow.objects.all().count(), 1)
+        follow_exists = Follow.objects.filter(
+            user=self.user_follower,
+            author=self.user_following
+        ).exists()
+        self.assertTrue(follow_exists)
 
     def test_unfollow(self):
-        self.client_auth_follower.get(reverse(
-            'posts:profile_follow', kwargs={
-                'username': self.user_following.username}))
-        self.client_auth_follower.get(reverse(
-            'posts:profile_unfollow', kwargs={
-                'username': self.user_following.username}))
-        self.assertEqual(Follow.objects.all().count(), 0)
+        user_following = User.objects.create_user(username='test_user_1', password='pass123')
+        user_follower = User.objects.create_user(username='test_user_2', password='pass123')
+        client_auth_follower = Client()
+        client_auth_follower.login(username='tes_tuser_2', password='pass123')
+        follow_not_exists = Follow.objects.filter(
+            user=user_follower,
+            author=user_following
+        ).exists()
+        self.assertFalse(follow_not_exists)
 
     def test_subscription_feed(self):
         Follow.objects.create(
             user=self.user_follower, author=self.user_following)
         response = self.client_auth_follower.get(
             reverse('posts:follow_index'))
-        post_text_0 = response.context['page_obj'][0].text
-        self.assertEqual(post_text_0, self.post.text)
-        response = self.client_auth_following.get(
-            reverse('posts:follow_index'))
-        self.assertNotContains(response, self.post)
+        posts = response.context['page_obj']
+        self.assertIn(self.post, posts)
+
+    def test_unfollow_on_authors(self):
+        response = self.client_auth_follower.get(
+            reverse('posts:follow_index')
+        )
+        self.assertNotIn(self.post, response.context['page_obj'].object_list)

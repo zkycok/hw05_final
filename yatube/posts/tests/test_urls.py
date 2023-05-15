@@ -32,6 +32,8 @@ class TaskURLTests(TestCase):
             f'/group/{cls.group.slug}/': 'posts/group_list.html',
             f'/profile/{cls.user.username}/': 'posts/profile.html',
             f'/posts/{cls.post.id}/': 'posts/post_detail.html',
+            # не разобралась
+            # f'/follow/': 'posts/follow.html',
         }
 
         cls.templates_url_names_private = {
@@ -96,4 +98,6 @@ class TaskURLTests(TestCase):
 
     def test_wrong_uri_returns_404(self):
         response = self.authorized_client.get('/something/really/weird/')
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        response = self.client.get('/unexciting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

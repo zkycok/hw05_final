@@ -132,12 +132,14 @@ class TaskCreateFormTests(TestCase):
         self.assertEqual(Comment.objects.count(), comment_count)
 
     def test_create_comment(self):
+        Post.objects.all().delete()
         post = Post.objects.create(
             text='Тестовый текст',
             author=self.user,
             group=self.group,
         )
 
+        comment_count = Comment.objects.count()
         templates_form_names = {'text': 'Тестовый комментарий'}
 
         response = self.authorized_client.post(
@@ -146,7 +148,9 @@ class TaskCreateFormTests(TestCase):
             data=templates_form_names,
             follow=True)
 
-        comment_count = Comment.objects.count()
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(Comment.objects.count(), comment_count)
+        self.assertEqual(Comment.objects.count(), comment_count + 1)
+
+        first_comment = Comment.objects.first()
+        self.assertEqual(first_comment.text, templates_form_names.get('text'))
+        self.assertEqual(first_comment.author, self.user)

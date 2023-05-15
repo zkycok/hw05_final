@@ -3,8 +3,7 @@
 {% load cache %}
 {% block content %}
   <h1>Подписчики</h1>
-  {% cache 20 index %}
-  {% include 'posts/includes/switcher.html' %}
+  {% include 'posts/includes/switcher.html' with follow=True %}
   {% for post in page_obj %}
   <article>
     <ul>
@@ -28,6 +27,5 @@
     {% if not forloop.last %}
     <hr>{% endif %}
   {% endfor %}
-  {% endcache %}
   {% include 'posts/includes/paginator.html' %}
 {% endblock content%}

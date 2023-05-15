@@ -6,7 +6,6 @@ from django.views.decorators.cache import cache_page
 from .forms import PostForm, CommentForm
 from .models import Follow, Group, Post, User
 from .utils import pagination_fun
-from django.http import HttpResponseRedirect
 
 
 @cache_page(20)
@@ -38,9 +37,14 @@ def profile(request, username):
     post_list = author.posts.select_related('group', 'author')
 
     page_obj = pagination_fun(post_list, request)
+    following = False
+    if request.user.is_authenticated:
+        following = Follow.objects.filter(
+            user=request.user, author=author).exists()
     context = {
         'author': author,
         'page_obj': page_obj,
+        'following': following,
     }
 
     return render(request, 'posts/profile.html', context)
@@ -48,18 +52,8 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    # comments = post.comments.filter(active=True)
     comments = post.comments.all()
     form = CommentForm()
-
-    # if request.method == 'POST':
-    #     comment_form = CommentForm(data=request.POST)
-    #     if comment_form.is_valid():
-    #         new_comment = comment_form.save(commit=False)
-    #         new_comment.post = post
-    #         new_comment.save()
-    # else:
-    #     comment_form = CommentForm()
     return render(request,
                   'posts/post_detail.html',
                   {
@@ -115,18 +109,13 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    user = request.user
-    authors = user.follower.values_list('author', flat=True)
-    posts_list = Post.objects.filter(author__id__in=authors)
-
-    paginator = Paginator(posts_list, 10)
-    page_number = request.GET.get('page')
-    page = paginator.get_page(page_number)
+    posts_list = Post.objects.filter(author__following__user=request.user)
+    page = pagination_fun(posts_list, request)
 
     return render(
         request,
         'posts/follow.html',
-        {'page_obj': page, 'paginator': paginator}
+        {'page_obj': page},
     )
 
 
@@ -136,15 +125,11 @@ def profile_follow(request, username):
     user = request.user
     if author != user:
         Follow.objects.get_or_create(user=user, author=author)
-        return redirect(
-            'posts:profile',
-            username=username
-        )
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+    return redirect('posts:profile', username=username)
 
 
 @login_required
 def profile_unfollow(request, username):
     user = request.user
     Follow.objects.get(user=user, author__username=username).delete()
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+    return redirect('posts:profile', username=username)

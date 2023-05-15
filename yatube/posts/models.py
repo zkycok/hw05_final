@@ -40,7 +40,8 @@ class Post(models.Model):
     image = models.ImageField(
         'Картинка',
         upload_to='posts/',
-        blank=True
+        blank=True,
+        help_text='Выберите изображение',
     )
 
     class Meta:
@@ -73,7 +74,7 @@ class Comment(models.Model):
     )
 
     class Meta:
-        ordering = ['-created']
+        ordering = ('created',)
 
 
 class Follow(models.Model):
@@ -90,3 +91,13 @@ class Follow(models.Model):
 
     def __str__(self):
         return f"Последователь: '{self.user}', автор: '{self.author}'"
+
+    class Meta:
+        ordering = ('author',)
+        verbose_name = 'Follow',
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'user'],
+                name='unique_follower'
+            )
+        ]
