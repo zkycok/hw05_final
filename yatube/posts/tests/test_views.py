@@ -332,8 +332,14 @@ class FollowTest(TestCase):
         self.assertTrue(follow_exists)
 
     def test_unfollow(self):
-        user_following = User.objects.create_user(username='test_user_1', password='pass123')
-        user_follower = User.objects.create_user(username='test_user_2', password='pass123')
+        user_following = User.objects.create_user(
+            username='test_user_1',
+            password='pass123'
+        )
+        user_follower = User.objects.create_user(
+            username='test_user_2',
+            password='pass123'
+        )
         client_auth_follower = Client()
         client_auth_follower.login(username='tes_tuser_2', password='pass123')
         follow_not_exists = Follow.objects.filter(
