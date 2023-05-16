@@ -43,7 +43,17 @@
 
       {% load user_filters %}
 
-      {% if user.is_authenticated %}
+      <a href="{% url 'posts:post_detail' post.pk %}">подробная информация</a>
+    </aside>
+    <article class="col-12 col-md-9">
+      {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
+        <img class="card-img my-2" src="{{ im.url }}">
+      {% endthumbnail %}
+      <p>
+        {{ post.text|linebreaks }}
+      </p>
+    </article>
+    {% if user.is_authenticated %}
         <div class="card my-4">
           <h5 class="card-header">Добавить комментарий:</h5>
           <div class="card-body">
@@ -72,16 +82,5 @@
           </div>
         </div>
       {% endfor %}
-
-      <a href="{% url 'posts:post_detail' post.pk %}">подробная информация</a>
-    </aside>
-    <article class="col-12 col-md-9">
-      {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
-        <img class="card-img my-2" src="{{ im.url }}">
-      {% endthumbnail %}
-      <p>
-        {{ post.text|linebreaks }}
-      </p>
-    </article>
   </div>
 {% endblock content %}

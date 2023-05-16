@@ -32,13 +32,12 @@ class TaskURLTests(TestCase):
             f'/group/{cls.group.slug}/': 'posts/group_list.html',
             f'/profile/{cls.user.username}/': 'posts/profile.html',
             f'/posts/{cls.post.id}/': 'posts/post_detail.html',
-            # не разобралась
-            # f'/follow/': 'posts/follow.html',
         }
 
         cls.templates_url_names_private = {
             f'/posts/{cls.post.id}/edit/': 'posts/create_post.html',
             '/create/': 'posts/create_post.html',
+            '/follow/': 'posts/follow.html',
         }
 
         cls.templates_url_names = {**cls.templates_url_names_public,

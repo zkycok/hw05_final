@@ -332,19 +332,17 @@ class FollowTest(TestCase):
         self.assertTrue(follow_exists)
 
     def test_unfollow(self):
-        user_following = User.objects.create_user(
-            username='test_user_1',
-            password='pass123'
+        Follow.objects.get_or_create(
+            user=self.user_follower,
+            author=self.user_following
         )
-        user_follower = User.objects.create_user(
-            username='test_user_2',
-            password='pass123'
-        )
-        client_auth_follower = Client()
-        client_auth_follower.login(username='tes_tuser_2', password='pass123')
+
+        self.client_auth_follower.get(reverse(
+            'posts:profile_unfollow', kwargs={
+                'username': self.user_following.username}))
         follow_not_exists = Follow.objects.filter(
-            user=user_follower,
-            author=user_following
+            user=self.user_follower,
+            author=self.user_following
         ).exists()
         self.assertFalse(follow_not_exists)
 
